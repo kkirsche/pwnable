@@ -16,6 +16,7 @@ from pydispatch import dispatcher
 from pwnable.core.helpers import color, get_config
 from pwnable.core.loaders import Loaders
 
+
 # custom exceptions used for nested menu navigation
 class NavMain(Exception):
     pass
@@ -24,8 +25,10 @@ class NavMain(Exception):
 class NavScanning(Exception):
     pass
 
+
 class NavLoading(Exception):
     pass
+
 
 class Pwnable(Cmd):
 
@@ -125,10 +128,10 @@ class Pwnable(Cmd):
         try:
             if geteuid() != 0:
                 if self.is_root:
-                    self.show_banner()
                     print(
-                        '[!] Warning: Running PWNable as non-root will likely fail to run certain modules!'
-                    )
+                        color(
+                            '[!] Warning: Running PWNable as non-root will likely fail to run certain modules!'
+                        ))
                     while True:
                         confirm = input(
                             color(
@@ -177,8 +180,7 @@ class Pwnable(Cmd):
             except KeyboardInterrupt:
                 self.menu_state = "Main"
                 try:
-                    choice = input(
-                        color("[>] Exit? [y/N] ", "red"))
+                    choice = input(color("[>] Exit? [y/N] ", "red"))
                     if choice.lower() != "" and choice.lower()[0] == "y":
                         self.shutdown()
                         return True
@@ -195,8 +197,8 @@ class Pwnable(Cmd):
             except NavScanning:
                 self.menu_state = "Scanning"
 
-            except Exception as e:
-                print(color("[!] Exception: {e}".format(e=e)))
+            # except Exception as e:
+            #     print(color("[!] Exception: {e}".format(e=e)))
 
     def default(self, params):
         pass
@@ -249,6 +251,7 @@ class Pwnable(Cmd):
 
 
 class ScanningMenu(Cmd):
+
     def __init__(self, main_menu):
         Cmd.__init__(self)
 
@@ -293,6 +296,7 @@ class ScanningMenu(Cmd):
 
 
 class LoadMenu(Cmd):
+
     def __init__(self, main_menu):
         Cmd.__init__(self)
 

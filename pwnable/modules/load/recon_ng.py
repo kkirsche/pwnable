@@ -1,9 +1,10 @@
 from elasticsearch.exceptions import TransportError
 from pwnable.core.helpers import color
-from json import dumps, loads
+from json import loads
 
 
 class ReconNG:
+
     def __init__(self):
         self.hosts_mapping = {
             'properties': {
@@ -83,7 +84,9 @@ class ReconNG:
             else:
                 raise e
         except Exception as e:
-            print(color('[!] Failed to create index due to an error {e}'.format(e=e)))
+            print(
+                color('[!] Failed to create index due to an error {e}'.format(
+                    e=e)))
         return False
 
     def load_elasticsearch_item(self, client, doc_type, item):

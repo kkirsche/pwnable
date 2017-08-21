@@ -13,10 +13,10 @@ def color(string, color=None):
     if color:
         if color.lower() == "red":
             attr.append('31')
-        elif color.lower() == "yellow":
-            attr.append('33')
         elif color.lower() == "green":
             attr.append('32')
+        elif color.lower() == "yellow":
+            attr.append('33')
         elif color.lower() == "blue":
             attr.append('34')
         return '\x1b[%sm%s\x1b[0m' % (';'.join(attr), string)
@@ -33,6 +33,7 @@ def color(string, color=None):
             return '\x1b[%sm%s\x1b[0m' % (';'.join(attr), string)
         else:
             return string
+
 
 def get_config(conn, fields):
     """

@@ -7,6 +7,7 @@ from json import loads, dumps
 
 # third party
 from elasticsearch import Elasticsearch
+from prettytable import PrettyTable
 
 # framework
 from pwnable.core.helpers import color
@@ -53,26 +54,36 @@ class Loaders(object):
             value = ' '.join(options[1:])
             if key == 'database':
                 if value.lower() not in ['elasticsearch']:
-                    print('[!] Invalid database')
+                    print(color('[!] Invalid database'))
                     return False
             if key == 'port':
                 try:
                     value = int(value)
                 except ValueError:
-                    print('[!] Invalid port number')
+                    print(color('[!] Invalid port number'))
                     return False
             self.options[key.lower()]['Value'] = value
-            print('{k} => {v}'.format(k=key, v=value))
+            print(color('[*] {k} => {v}'.format(k=key, v=value)))
         else:
             print(color('[!] Invalid option'))
 
     def do_show(self, params):
+        table = PrettyTable()
         if params.lower() in self.options:
             k = params.lower()
-            print('{k} => {v}'.format(k=k, v=self.options[k]['Value']))
+            table.field_names = [k]
+            table.add_row([self.options[k]['Value']])
         else:
+            field_names = []
             for k in self.options:
-                print('{k} => {v}'.format(k=k, v=self.options[k]['Value']))
+                field_names.append(k)
+            table.field_names = field_names
+
+            values = []
+            for k in self.options:
+                values.append(self.options[k]['Value'])
+            table.add_row(values)
+        print(table.get_string())
 
     def do_run(self, params):
         if self.options['database']['Value'].lower() == 'elasticsearch':
@@ -92,6 +103,7 @@ class Loaders(object):
                     color='red'))
             return False
         if self.options['format']['Value'] == 'recon-ng':
+            self.load_local(params=params)
             self.load_elasticsearch_recon_ng(params=params)
 
     def load_elasticsearch_recon_ng(self, params):
