@@ -33,3 +33,18 @@ def color(string, color=None):
             return '\x1b[%sm%s\x1b[0m' % (';'.join(attr), string)
         else:
             return string
+
+def get_config(conn, fields):
+    """
+    Helper to pull common database config information outside of the
+    normal menu execution.
+    Fields should be comma separated.
+        i.e. 'version,install_path'
+    """
+
+    cur = conn.cursor()
+    cur.execute("SELECT {fields} FROM config".format(fields=fields))
+    results = cur.fetchone()
+    cur.close()
+
+    return results
