@@ -1,4 +1,4 @@
-from pwnable import Pwnable
+from pwnable.core.pwnable import Pwnable
 
 
 def cli():

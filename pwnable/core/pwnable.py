@@ -13,8 +13,8 @@ from tempfile import TemporaryFile
 from pydispatch import dispatcher
 
 # framework
-from helpers import color, get_config
-
+from pwnable.core.helpers import color, get_config
+from pwnable.core.loaders import Loaders
 
 # custom exceptions used for nested menu navigation
 class NavMain(Exception):
@@ -24,6 +24,8 @@ class NavMain(Exception):
 class NavScanning(Exception):
     pass
 
+class NavLoading(Exception):
+    pass
 
 class Pwnable(Cmd):
 
@@ -102,7 +104,7 @@ class Pwnable(Cmd):
 
     # Show Methods
     def show_banner(self):
-        banner_tmpl = get_data('pwnable', 'banner.txt')
+        banner_tmpl = get_data('pwnable', 'banner.txt').decode('utf-8')
         print(banner_tmpl.format(version=get_distribution('pwnable').version))
 
     # print a nicely formatted help menu
@@ -128,7 +130,7 @@ class Pwnable(Cmd):
                         '[!] Warning: Running PWNable as non-root will likely fail to run certain modules!'
                     )
                     while True:
-                        confirm = raw_input(
+                        confirm = input(
                             color(
                                 '[>] Are you sure you want to continue? [y/n]: '
                             ))
@@ -154,7 +156,7 @@ class Pwnable(Cmd):
         dispatcher.send('[*] PWNable is starting up...', sender='PWNable')
 
     def shutdown(self):
-        print('\n{message}'.format(message=color('[!] Shutting down...\n')))
+        print(color('[!] Shutting down...'))
         dispatcher.send('[*] PWNable shutting down...', sender='PWNable')
         if self.conn:
             self.conn.close()
@@ -165,28 +167,18 @@ class Pwnable(Cmd):
             try:
                 if self.menu_state == 'Scanning':
                     self.do_scanning('')
-                elif self.menu_state == 'Validation':
-                    self.do_validation('')
+                elif self.menu_state == 'Loading':
+                    self.do_load('')
                 else:
                     self.show_banner()
 
-                num_modules = []
-                if num_modules:
-                    num_modules = len(num_modules)
-                else:
-                    num_modules = 0
-
-                num_modules_output = color(num_modules, 'green')
-                line = '{spaces}{num_modules} modules currently loaded\n'.format(
-                    spaces=' ' * 20, num_modules=num_modules_output)
-                print(line)
                 Cmd.cmdloop(self)
                 # handle those pesky ctrl+c's
             except KeyboardInterrupt:
                 self.menu_state = "Main"
                 try:
-                    choice = raw_input(
-                        color("\n[>] Exit? [y/N] ", "red"))
+                    choice = input(
+                        color("[>] Exit? [y/N] ", "red"))
                     if choice.lower() != "" and choice.lower()[0] == "y":
                         self.shutdown()
                         return True
@@ -228,8 +220,8 @@ class Pwnable(Cmd):
                 stdoutf.seek(0)
                 stderrf.seek(0)
 
-                stdout = stdoutf.read()
-                stderr = stderrf.read()
+                stdout = stdoutf.read().decode('utf-8')
+                stderr = stderrf.read().decode('utf-8')
                 if stdout:
                     print(stdout)
                 if stderr:
@@ -243,16 +235,24 @@ class Pwnable(Cmd):
         except Exception as e:
             raise e
 
+    def do_load(self, line):
+        '''Jump to scanning menu'''
+        try:
+            l = LoadMenu(self)
+            l.cmdloop()
+        except Exception as e:
+            raise e
+
     def do_exit(self, param):
         '''Exit PWNable.'''
         raise KeyboardInterrupt
 
 
 class ScanningMenu(Cmd):
-    def __init__(self, mainMenu):
+    def __init__(self, main_menu):
         Cmd.__init__(self)
 
-        self.mainMenu = mainMenu
+        self.mainMenu = main_menu
 
         self.doc_header = 'Commands'
 
@@ -286,6 +286,60 @@ class ScanningMenu(Cmd):
     def do_nmap(self, param):
         '''Execute an nmap scan'''
         pass
+
+    def do_exit(self, param):
+        '''Exit PWNable.'''
+        raise KeyboardInterrupt
+
+
+class LoadMenu(Cmd):
+    def __init__(self, main_menu):
+        Cmd.__init__(self)
+
+        self.main_menu = main_menu
+
+        self.doc_header = 'Load Commands'
+
+        # set the prompt text
+        self.prompt = '(PWNable: {module}) > '.format(module=color(
+            "load", color="green"))
+
+        self.loaders = Loaders(self.main_menu)
+
+    def do_back(self, line):
+        "Return back a menu."
+        return NavMain()
+
+    def emptyline(self):
+        pass
+
+    # print a nicely formatted help menu
+    # stolen/adapted from recon-ng
+    def print_topics(self, header, cmds, cmdlen, maxcol):
+        if cmds:
+            self.stdout.write("%s\n" % str(header))
+            if self.ruler:
+                self.stdout.write("%s\n" % str(self.ruler * len(header)))
+            for c in cmds:
+                self.stdout.write(
+                    "%s %s\n" % (c.ljust(17), getattr(self, 'do_' + c).__doc__))
+            self.stdout.write("\n")
+
+    def do_main(self, line):
+        '''Go back to the main menu.'''
+        raise NavMain()
+
+    def do_set(self, param):
+        '''Set loader options'''
+        self.loaders.do_set(param)
+
+    def do_show(self, param):
+        '''Show load options'''
+        self.loaders.do_show(param)
+
+    def do_run(self, params):
+        '''Run the loader'''
+        self.loaders.do_run(params)
 
     def do_exit(self, param):
         '''Exit PWNable.'''
